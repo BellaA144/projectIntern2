@@ -54,7 +54,7 @@ export const authOptions: NextAuthOptions = {
       
         const { data: user, error } = await supabase
           .from("users")
-          .select("id_user, username, email, role, password") // Pastikan nama kolom sesuai database
+          .select("id_user, username, email, role, password") 
           .eq("email", credentials.email)
           .single();
       

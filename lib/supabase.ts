@@ -6,7 +6,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 
 const bucketName = "books";
 
-// 🔹 Ambil data user yang sedang login
+// Ambil data user yang sedang login
 async function getUser() {
   const { data, error } = await supabase.auth.getUser();
   if (error) {
@@ -16,7 +16,7 @@ async function getUser() {
   return data?.user;
 }
 
-// 🔹 Fungsi untuk mendapatkan daftar buku dengan RLS
+// Fungsi untuk mendapatkan daftar buku dengan RLS
 export async function getBooks({ search, category, year, page }: { search?: string; category?: string; year?: string; page?: number }) {
   const limit = 6;
   const offset = ((page || 1) - 1) * limit;
@@ -75,7 +75,7 @@ export async function getCategories() {
   return uniqueCategories;
 }
 
-// 🔹 Fungsi untuk register dengan RLS (gunakan `auth.signUp()`)
+// Fungsi untuk register dengan RLS (gunakan `auth.signUp()`)
 export async function signUpUser({ email, password, username }: { email: string, password: string, username: string }) {
   const { data, error } = await supabase.auth.signUp({ email, password });
 
@@ -83,7 +83,7 @@ export async function signUpUser({ email, password, username }: { email: string,
     return { success: false, error: error.message };
   }
 
-  // 🔥 Simpan data user di tabel `users`
+  // Simpan data user di tabel `users`
   const { data: userData, error: insertError } = await supabase.from("users").insert([
     { id_user: data.user?.id, email, username, role: "reader" }
   ]);
@@ -95,7 +95,7 @@ export async function signUpUser({ email, password, username }: { email: string,
   return { success: true, data };
 }
 
-// 🔹 Fungsi untuk login
+// Fungsi untuk login
 export async function signInUser({ email, password }: { email: string; password: string }) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
@@ -107,7 +107,7 @@ export async function signInUser({ email, password }: { email: string; password:
   return { success: true, data };
 }
 
-// 🔹 Fungsi untuk logout
+// Fungsi untuk logout
 export async function signOutUser() {
   const { error } = await supabase.auth.signOut();
   if (error) {

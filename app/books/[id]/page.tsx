@@ -41,7 +41,6 @@ export default async function BookDetailPage({ params }: { params: { id: string 
             </p>
             <p className="text-gray-600 text-sm mt-1">{book.category}</p>
 
-            {/* Panggil komponen BookDescription */}
             <BookDescription description={book.description} />
           </div>
         </div>
