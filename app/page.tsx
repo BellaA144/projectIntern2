@@ -1,101 +1,151 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { getBooks, getCategories } from "@/lib/supabase"; 
+import { useDebounce } from "@/hooks/useDebounce";
+import { Card, CardContent, Typography, TextField, MenuItem, Pagination, Box } from "@mui/material";
 import Image from "next/image";
+import Link from "next/link";
 
-export default function Home() {
+export default function Page() {
+  const searchParams = useSearchParams();
+  const router = useRouter(); 
+
+  const [books, setBooks] = useState<any[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const [filters, setFilters] = useState({
+    search: searchParams.get("search") || "",
+    category: searchParams.get("category") || "",
+    page: parseInt(searchParams.get("page") || "1"),
+  });
+
+  const debouncedSearch = useDebounce(filters.search, 500); 
+
+  useEffect(() => {
+    async function fetchBooks() {
+      try {
+        const { books, totalPages } = await getBooks({
+          search: filters.search,
+          category: filters.category,
+          page: filters.page,
+        });
+  
+        setBooks(books);
+        setTotalPages(totalPages);
+      } catch (error) {
+        console.error("Error fetching books:", error);
+      }
+    }
+  
+    fetchBooks();
+  }, [filters]);
+  
+  
+
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const categories = await getCategories();
+        setCategories(categories);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    }
+
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (filters.search) params.set("search", filters.search);
+    if (filters.category) params.set("category", filters.category);
+    if (filters.page > 1) params.set("page", filters.page.toString());
+
+    router.replace(`?${params.toString()}`);
+  }, [filters.search, filters.category, filters.page]);
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div>
+      <h1 className="text-3xl font-bold text-center my-6">E-Book List</h1>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+      {/* Filter Section */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6 bg-white p-4 rounded-lg">
+        <TextField
+          label="Cari Buku..."
+          id="search"
+          variant="outlined"
+          fullWidth
+          value={filters.search}
+          onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
+        />
+        <TextField
+          select
+          label="Kategori"
+          id="category"
+          variant="outlined"
+          fullWidth
+          value={filters.category}
+          onChange={(e) => setFilters((prev) => ({ ...prev, category: e.target.value, page: 1 }))}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          <MenuItem value="">Semua Kategori</MenuItem>
+          {categories.map((cat) => (
+            <MenuItem key={cat} value={cat}>
+              {cat}
+            </MenuItem>
+          ))}
+        </TextField>
+      </div>
+
+      {/* Book List */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {books.length > 0 ? (
+          books.map((book) => (
+            <Card key={book.id} className="shadow-lg rounded-lg">
+              <Image
+                src={book.cover_url || "/placeholder.jpg"}
+                alt={book.title}
+                width={200}
+                height={300}
+                className="rounded-lg object-cover mx-auto"
+              />
+              <CardContent className="p-4 border-t border-gray-300">
+                <Typography variant="h6" className="font-bold">
+                  <Link href={`/books/${book.id}`} className="hover:underline text-gray-900">
+                    {book.title}
+                  </Link>
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                  {book.category} - {book.year}
+                </Typography>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <p className="text-center text-gray-500 col-span-3">Tidak ada buku yang ditemukan.</p>
+        )}
+      </div>
+
+      <div className="flex justify-center mt-6">
+        <Box
+          sx={{
+            backgroundColor: "white", 
+            borderRadius: "8px", 
+            padding: "4px 8px", 
+            display: "inline-flex", 
+            boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)", 
+          }}
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
+          <Pagination
+            count={totalPages}
+            page={filters.page}
+            onChange={(_, value) => setFilters((prev) => ({ ...prev, page: value }))}
+            color="primary"
           />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        </Box>
+      </div>
     </div>
   );
 }
